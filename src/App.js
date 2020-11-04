@@ -58,23 +58,23 @@ export default class App extends React.Component {
   return (
     <div className="App">
       <div className="App-Header">
-      <form onSubmit={this.loadMap} className="App-Form">
-          <label htmlFor="name">
-            Nome
-            <input type="text" onChange={(event) => this.setState({name: event.target.value})} name="name" className="App-Input"/>
-          </label>
-          <label htmlFor="urlImage">
-            URL da Imagem
-            <input type="text" onChange={(event) => this.setState({urlImage: event.target.value})} name="urlImage" className="App-Input" />
-          </label>
-          <input type="submit" value="Carregar"/>
-          <input type="button" value="Limpar" onClick={this.clearPoints}/>
-      </form>
+        <form onSubmit={this.loadMap} className="App-Form">
+            <label htmlFor="name">
+              Nome
+              <input type="text" onChange={(event) => this.setState({name: event.target.value})} name="name" className="App-Input"/>
+            </label>
+            <label htmlFor="urlImage">
+              URL da Imagem
+              <input type="text" onChange={(event) => this.setState({urlImage: event.target.value})} name="urlImage" className="App-Input" />
+            </label>
+            <input type="submit" value="Carregar"/>
+            <input type="button" value="Limpar" onClick={this.clearPoints}/>
+        </form>
       </div>
 
       <div className="App-Container">
         <div className="App-Image-Div" >
-          {/* <svg className="App-Svg" onClick={this._onMouseClick.bind(this)}>
+          <svg className="App-Svg" onClick={this._onMouseClick.bind(this)}>
               {this.state.points.map((point,key) => {
                 if(key === 0){
                   return(
@@ -90,9 +90,9 @@ export default class App extends React.Component {
                   );
                 }
               })}
-
-          </svg> */}
-         <img src={this.state.urlImage} className="App-Image" alt="mapa"/>
+          </svg>
+         <img src={this.state.urlImage} className="App-Image" alt="mapa">
+         </img>
         </div>
       </div>
 
