@@ -1,5 +1,6 @@
 *{
   box-sizing: border-box;
+  overflow: hidden;
 }
 .App {
   display: flex;
@@ -22,38 +23,33 @@
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  max-width: 500px;
+  max-width: 40vw;
 }
 
 .App-Form input {
   align-self: flex-end;
 }
+
 .App-Input {
   background-color: aliceblue;
 }
 
 .App-Container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   width: 100%;
   height: 95%;
 }
 
 .App-Image-Div {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   margin-top: 15px;
   width: 100%;
   height: 100%;
+
 }
 
 .App-Svg{
   position: absolute;
-  height: 90%;
+  height: 100%;
   width: 100%;
-  background-color: #FF000020;
 }
 
 .App-Image {

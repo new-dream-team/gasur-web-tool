@@ -13,7 +13,8 @@ export default class App extends React.Component {
     }
     this.loadMap = this.loadMap.bind(this)
     this.clearPoints = this.clearPoints.bind(this)
-    this.changeEditMode = this.changeEditMode(this)
+    this.changeEditMode = this.changeEditMode.bind(this)
+    this._onMouseClick = this._onMouseClick.bind(this)
   }
 
   _onMouseClick(e) {
@@ -74,7 +75,7 @@ export default class App extends React.Component {
 
       <div className="App-Container">
         <div className="App-Image-Div" >
-          <svg className="App-Svg" onClick={this._onMouseClick.bind(this)}>
+          <svg className="App-Svg" onClick={this._onMouseClick} >
               {this.state.points.map((point,key) => {
                 if(key === 0){
                   return(
@@ -91,8 +92,7 @@ export default class App extends React.Component {
                 }
               })}
           </svg>
-         <img src={this.state.urlImage} className="App-Image" alt="mapa">
-         </img>
+         <img src={this.state.urlImage} className="App-Image" alt="mapa"/>
         </div>
       </div>
 
