@@ -2,7 +2,7 @@ import React from 'react';
 import './App.css';
 
 export default class App extends React.Component {
-  constructor(props){
+  constructor(props) {
     super(props)
     this.state = {
       currentChar: 0,
@@ -14,19 +14,20 @@ export default class App extends React.Component {
     this.loadMap = this.loadMap.bind(this)
     this.clearPoints = this.clearPoints.bind(this)
     this.changeEditMode = this.changeEditMode.bind(this)
+    this.generateJson = this.generateJson.bind(this)
     this._onMouseClick = this._onMouseClick.bind(this)
   }
 
   _onMouseClick(e) {
-    if(this.state.points.length < 1){
+    if (this.state.points.length < 1) {
       this.state.points.push({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY , name: `P${this.state.currentChar}`})
-    }else{
+    } else {
       const newPoints = this.state.points
       const diffX = Math.abs(e.nativeEvent.offsetX - newPoints[newPoints.length - 1].x)
       const diffY = Math.abs(e.nativeEvent.offsetY - newPoints[newPoints.length - 1].y)
       if(diffX > diffY){
         newPoints[newPoints.length - 1].y = e.nativeEvent.offsetY
-      }else{
+      } else {
         newPoints[newPoints.length - 1].x = e.nativeEvent.offsetX
       }
       newPoints.push({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY , name: `P${this.state.currentChar}`})
@@ -38,24 +39,67 @@ export default class App extends React.Component {
     console.log(this.state.points[this.state.points.length - 1 ])
   }
 
-  loadMap(event){
+  loadMap(event) {
     event.preventDefault();
   }
 
-  clearPoints(){
+  clearPoints() {
     this.setState({
       points: [],
       currentChar: 0
     })
   }
 
-  changeEditMode(){
+  generateJson() {
+    console.log(document.getElementById("mapa").height);
+    console.log(document.getElementById("mapa").width);
+
+    this.setState({
+      points: this.state.points.map((point, index, elements) => {       
+        if (index < 1) {
+          const nextPoint = elements[index + 1];
+          point.distances = [
+            {
+              pointName: nextPoint.name,
+              pointDistance: Math.round(Math.sqrt(Math.pow((nextPoint.x - point.x),2) + Math.pow((nextPoint.y - point.y),2)))
+            }
+          ];
+        } else if (index < elements.length -1 ){
+          const prevPoint = elements[index - 1];
+          const nextPoint = elements[index + 1];
+          point.distances = [
+            {
+              pointName: nextPoint.name,
+              pointDistance: Math.round(Math.sqrt(Math.pow((nextPoint.x - point.x),2) + Math.pow((nextPoint.y - point.y),2)))
+            },
+            {
+              pointName: prevPoint.name,
+              pointDistance: Math.round(Math.sqrt(Math.pow((point.x - prevPoint.x),2) + Math.pow((point.y - prevPoint.y),2)))
+            }
+          ];
+        } else {
+          const prevPoint = elements[index - 1];
+          point.distances = [
+            {
+              pointName: prevPoint.name,
+              pointDistance: Math.round(Math.sqrt(Math.pow((point.x - prevPoint.x),2) + Math.pow((point.y - prevPoint.y),2)))
+            }
+          ];
+        }
+        return point;
+        
+    })});
+    console.log(this.state.points);
+      
+  }
+
+  changeEditMode() {
     this.setState({
       editMode: true
     })
   }
 
- render(){
+ render() {
   return (
     <div className="App">
       <div className="App-Header">
@@ -70,6 +114,7 @@ export default class App extends React.Component {
             </label>
             <input type="submit" value="Carregar"/>
             <input type="button" value="Limpar" onClick={this.clearPoints}/>
+            <input type="button" value="JSONizar" onClick={this.generateJson}/>
         </form>
       </div>
 
@@ -92,7 +137,7 @@ export default class App extends React.Component {
                 }
               })}
           </svg>
-         <img src={this.state.urlImage} className="App-Image" alt="mapa"/>
+         <img id="mapa" src={this.state.urlImage} className="App-Image" alt="mapa"/>
         </div>
       </div>
 
