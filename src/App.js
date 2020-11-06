@@ -1,6 +1,8 @@
 import React from 'react';
 import './App.css';
 
+import api from './services/api'
+
 export default class App extends React.Component {
   constructor(props) {
     super(props)
@@ -50,9 +52,9 @@ export default class App extends React.Component {
     })
   }
 
-  generateJson() {
-    console.log(document.getElementById("mapa").height);
-    console.log(document.getElementById("mapa").width);
+  async generateJson() {
+    // console.log(document.getElementById("mapa").height);
+    // console.log(document.getElementById("mapa").width);
 
     this.setState({
       points: this.state.points.map((point, index, elements) => {       
@@ -89,7 +91,15 @@ export default class App extends React.Component {
         return point;
         
     })});
-    console.log(this.state.points);
+    // console.log(this.state.points);
+
+    const { data } =  await api.post('image', {
+      name: this.state.name,
+	    urlImage: this.state.urlImage,
+      points: this.state.points,
+
+    })
+    console.log(data)
       
   }
 
