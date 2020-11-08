@@ -56,6 +56,9 @@ export default class App extends React.Component {
     // console.log(document.getElementById("mapa").height);
     // console.log(document.getElementById("mapa").width);
 
+    const scale = document.getElementById("mapa").naturalHeight / document.getElementById("mapa").height;
+
+
     this.setState({
       points: this.state.points.map((point, index, elements) => {       
         if (index < 1) {
@@ -91,13 +94,21 @@ export default class App extends React.Component {
         return point;
         
     })});
-    // console.log(this.state.points);
+    console.log(this.state.points);
 
     const { data } =  await api.post('image', {
       name: this.state.name,
 	    urlImage: this.state.urlImage,
-      points: this.state.points,
+      points: this.state.points.map((point) => {
+        point.x *= scale;
+        point.y *= scale;
+        point.distances = point.distances.map(distance => {
+          return distance.pointDistance *= scale;
+        });
 
+        return point;
+
+      }),
     })
     console.log(data)
       
