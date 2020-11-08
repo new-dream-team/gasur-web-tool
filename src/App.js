@@ -16,9 +16,11 @@ export default class App extends React.Component {
       scale: 1,
       json: [],
     }
+
+    this._onMouseClick = this._onMouseClick.bind(this)
     this.clearPoints = this.clearPoints.bind(this)
     this.generateJson = this.generateJson.bind(this)
-    this._onMouseClick = this._onMouseClick.bind(this)
+    this.formatAdditionalRoutes = this.formatAdditionalRoutes.bind(this)
   }
 
   _onMouseClick(e) {
@@ -34,45 +36,25 @@ export default class App extends React.Component {
       this.setState({ currentChar: this.state.currentChar + 1})
     } else if ( this.state.editMode === 1){
       const cursorPoint = this.cursorPoint(e)
-      console.log(JSON.stringify(cursorPoint))
       let newAdditionalPoints = this.state.additionalPoints;
       if(cursorPoint){
-          newAdditionalPoints.push({ x: Math.round(cursorPoint.x), y: Math.round(cursorPoint.y), name: cursorPoint.name, wasAPoint: true})
+          newAdditionalPoints.push({ x: Math.round(cursorPoint.x), y: Math.round(cursorPoint.y), name: cursorPoint.name, wasAPoint: true, isInJson: cursorPoint.isInJson})
+
           if(newAdditionalPoints.length % 2 === 0 ){
             // verifica o que tem atras e muda
             if(!newAdditionalPoints[newAdditionalPoints.length - 2].wasAPoint){
-              //pode alterar
-              const diffX = Math.abs(newAdditionalPoints[newAdditionalPoints.length-1].x  - newAdditionalPoints[newAdditionalPoints.length-2].x)
-              const diffY = Math.abs(newAdditionalPoints[newAdditionalPoints.length-1].y  - newAdditionalPoints[newAdditionalPoints.length-2].y)
-              if(diffX > diffY){
-                newAdditionalPoints[newAdditionalPoints.length - 2].y = newAdditionalPoints[newAdditionalPoints.length-1].y
-              } else {
-                newAdditionalPoints[newAdditionalPoints.length - 2].x = newAdditionalPoints[newAdditionalPoints.length-1].x
-              }
+              this.changePointPosition(newAdditionalPoints, (newAdditionalPoints.length - 2), (newAdditionalPoints.length-1))
             }
           }
       }else{
           // newAdditionalPoints = this.addNewAdjustedPoint(this.state.additionalPoints,e)
-          newAdditionalPoints.push({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY , name: `P${this.state.currentChar}`, wasAPoint: false})
+          newAdditionalPoints.push({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY , name: `P${this.state.currentChar}`, wasAPoint: false, isInJson: false})
           this.setState({ currentChar: this.state.currentChar + 1})
           if(newAdditionalPoints.length % 2 === 0 ){
             if(newAdditionalPoints[newAdditionalPoints.length - 2].wasAPoint){
-              console.log('cai onde deveria')
-              const diffX = Math.abs(newAdditionalPoints[newAdditionalPoints.length-1].x  - newAdditionalPoints[newAdditionalPoints.length-2].x)
-              const diffY = Math.abs(newAdditionalPoints[newAdditionalPoints.length-1].y  - newAdditionalPoints[newAdditionalPoints.length-2].y)
-              if(diffX > diffY){
-                newAdditionalPoints[newAdditionalPoints.length - 1].y = newAdditionalPoints[newAdditionalPoints.length-2].y
-              } else {
-                newAdditionalPoints[newAdditionalPoints.length - 1].x = newAdditionalPoints[newAdditionalPoints.length-2].x
-              }
+              this.changePointPosition(newAdditionalPoints, (newAdditionalPoints.length - 1), (newAdditionalPoints.length-2))
             }else {
-              const diffX = Math.abs(newAdditionalPoints[newAdditionalPoints.length-1].x  - newAdditionalPoints[newAdditionalPoints.length-2].x)
-              const diffY = Math.abs(newAdditionalPoints[newAdditionalPoints.length-1].y  - newAdditionalPoints[newAdditionalPoints.length-2].y)
-              if(diffX > diffY){
-                newAdditionalPoints[newAdditionalPoints.length - 2].y = newAdditionalPoints[newAdditionalPoints.length-1].y
-              } else {
-                newAdditionalPoints[newAdditionalPoints.length - 2].x = newAdditionalPoints[newAdditionalPoints.length-1].x
-              }
+              this.changePointPosition(newAdditionalPoints, (newAdditionalPoints.length - 2), (newAdditionalPoints.length-1))
             }
             newAdditionalPoints[newAdditionalPoints.length-1].wasAPoint = true;
           }
@@ -81,6 +63,16 @@ export default class App extends React.Component {
       this.setState({
         additionalPoints: newAdditionalPoints
       })
+    }
+  }
+
+  changePointPosition(points, indexToChange, indexToCompare){
+    const diffX = Math.abs(points[indexToChange].x  - points[indexToCompare].x);
+    const diffY = Math.abs(points[indexToChange].y  - points[indexToCompare].y);
+    if(diffX > diffY){
+      points[indexToChange].y = points[indexToCompare].y
+    } else {
+      points[indexToChange].x = points[indexToCompare].x
     }
   }
 
@@ -101,7 +93,7 @@ export default class App extends React.Component {
     const x = Math.round(e.nativeEvent.offsetX * this.state.scale);
     const y = Math.round(e.nativeEvent.offsetY * this.state.scale);
     
-    const aux = this.state.json.find( point => {
+    let aux = this.state.json.find( point => {
       const xDiff = Math.abs( x - point.x);
       const yDiff = Math.abs( y - point.y);
       const diffRange = 10
@@ -111,15 +103,22 @@ export default class App extends React.Component {
     if(aux){
       aux.x /= this.state.scale;
       aux.y /= this.state.scale;
+      aux.isInJson = true;
       return aux;
     }
 
-    return this.state.additionalPoints.find( point => {
+    aux = this.state.additionalPoints.find( point => {
       const xDiff = Math.abs( e.nativeEvent.offsetX - point.x);
       const yDiff = Math.abs( e.nativeEvent.offsetY - point.y);
       const diffRange = 10
       return xDiff <= diffRange && yDiff <= diffRange
     });
+
+    if(aux){
+      aux.isInJson = false;
+    }
+
+    return aux;
   }
 
   clearPoints() {
@@ -130,7 +129,7 @@ export default class App extends React.Component {
     });
   }
 
-  async generateJson() {
+  generateJson() {
     const scale = document.getElementById("mapa").naturalHeight / document.getElementById("mapa").height;
 
     this.setState({
@@ -191,6 +190,45 @@ export default class App extends React.Component {
     this.changeEditMode(1)
   }
 
+  formatAdditionalRoutes(){
+    this.print(this.state.additionalPoints)
+    const additionalPoints = this.state.additionalPoints
+    for( var i = 0; i < additionalPoints.length; i+=2 ){
+      const currentPoint = additionalPoints[i];
+      currentPoint.x *= this.state.scale;
+      currentPoint.y *= this.state.scale;
+
+      const nextPoint = additionalPoints[i+1];
+      nextPoint.x *= this.state.scale;
+      nextPoint.y *= this.state.scale;
+
+      if(!currentPoint.isInJson){
+        //verifica se ele está em alguma linha
+        //se sim
+          //ajusta o ponto
+      }
+
+      if(!nextPoint.isInJson){
+        //verifica se ele está em alguma linha
+        //se sim
+          //ajusta o ponto
+      }
+
+
+      if(currentPoint.isInJson){
+        const point = this.state.json.find( point => (currentPoint.name === point.name));
+        point.distances.push({
+          pointName: nextPoint.name, 
+          pointDistance: Math.round(Math.sqrt(Math.pow((nextPoint.x - point.x),2) + Math.pow((nextPoint.y - point.y),2)))
+        })
+      }
+    }
+  }
+
+  print( json ){
+    console.log(JSON.stringify(json))
+  }
+
   changeEditMode(editMode){
     this.setState({
       editMode,
@@ -212,6 +250,8 @@ export default class App extends React.Component {
             </label>
             <input type="button" value="Limpar" onClick={this.clearPoints}/>
             <input type="button" value="Editar rotas" onClick={this.generateJson}/>
+            <input type="button" value="Salvar rotas" onClick={this.formatAdditionalRoutes}/>
+
         </form>
       </div>
 
@@ -240,7 +280,7 @@ export default class App extends React.Component {
                   return(
                     <>
                       <rect className="App-Svg-Rect" x={`${lastPoint.x- 5}`} y={`${lastPoint.y-5}`} key={key*27} rx="20" ry="20" width="10" height="10" fill="yellow"/>
-                      <line className="App-Svg-Rect" x1={`${lastPoint.x}`} y1={`${lastPoint.y}`} x2={`${point.x}`} y2={`${point.y}`} key={key*29} style={{"stroke":"rgb(255,0,0)", "strokeWidth":2 }}/>
+                      <line className="App-Svg-Rect" x1={`${lastPoint.x}`} y1={`${lastPoint.y}`} x2={`${point.x}`} y2={`${point.y}`} key={key*29} style={{"stroke":"rgb(0,255,0)", "strokeWidth":2 }}/>
                       <rect className="App-Svg-Rect" x={`${point.x- 5}`} y={`${point.y-5}`} key={key*31} rx="20" ry="20" width="10" height="10" fill="yellow"/>
                     </>
                   )
