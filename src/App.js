@@ -96,7 +96,7 @@ export default class App extends React.Component {
     })});
     console.log(this.state.points);
 
-    const { data } =  await api.post('image', {
+    const response = await api.post('image', {
       name: this.state.name,
 	    urlImage: this.state.urlImage,
       points: this.state.points.map((point) => {
@@ -110,8 +110,7 @@ export default class App extends React.Component {
 
       }),
     })
-    console.log(data)
-      
+    alert(response.statusText)
   }
 
   changeEditMode() {
