@@ -38,7 +38,6 @@ export default class App extends React.Component {
       })
     }
     this.setState({ currentChar: this.state.currentChar + 1})
-    console.log(this.state.points[this.state.points.length - 1 ])
   }
 
   loadMap(event) {
@@ -53,11 +52,7 @@ export default class App extends React.Component {
   }
 
   async generateJson() {
-    // console.log(document.getElementById("mapa").height);
-    // console.log(document.getElementById("mapa").width);
-
     const scale = document.getElementById("mapa").naturalHeight / document.getElementById("mapa").height;
-
 
     this.setState({
       points: this.state.points.map((point, index, elements) => {       
@@ -94,21 +89,24 @@ export default class App extends React.Component {
         return point;
         
     })});
-    console.log(this.state.points);
+
+    const newPoints = this.state.points.map((point) => {
+      const newPoint= {}
+      newPoint.x = Math.round(point.x * scale);
+      newPoint.y = Math.round(point.y * scale);
+      newPoint.distances = point.distances.map(distance => {
+        const newDistance = {};
+        newDistance.pointName = distance.pointName;
+        newDistance.pointDistance = Math.round(distance.pointDistance * scale);
+        return newDistance;
+      });
+      return newPoint;
+    });
 
     const response = await api.post('image', {
       name: this.state.name,
 	    urlImage: this.state.urlImage,
-      points: this.state.points.map((point) => {
-        point.x *= scale;
-        point.y *= scale;
-        point.distances = point.distances.map(distance => {
-          return distance.pointDistance *= scale;
-        });
-
-        return point;
-
-      }),
+      points: newPoints
     })
     alert(response.statusText)
   }
