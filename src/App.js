@@ -140,7 +140,7 @@ export default class App extends React.Component {
           point.distances = [
             {
               pointName: nextPoint.name,
-              pointDistance: Math.round(Math.sqrt(Math.pow((nextPoint.x - point.x),2) + Math.pow((nextPoint.y - point.y),2)))
+              pointDistance: this.calculateDistance(point, nextPoint)
             }
           ];
         } else if (index < elements.length -1 ){
@@ -149,11 +149,11 @@ export default class App extends React.Component {
           point.distances = [
             {
               pointName: nextPoint.name,
-              pointDistance: Math.round(Math.sqrt(Math.pow((nextPoint.x - point.x),2) + Math.pow((nextPoint.y - point.y),2)))
+              pointDistance: this.calculateDistance(point, nextPoint)
             },
             {
               pointName: prevPoint.name,
-              pointDistance: Math.round(Math.sqrt(Math.pow((point.x - prevPoint.x),2) + Math.pow((point.y - prevPoint.y),2)))
+              pointDistance: this.calculateDistance(prevPoint, point)
             }
           ];
         } else {
@@ -161,7 +161,7 @@ export default class App extends React.Component {
           point.distances = [
             {
               pointName: prevPoint.name,
-              pointDistance: Math.round(Math.sqrt(Math.pow((point.x - prevPoint.x),2) + Math.pow((point.y - prevPoint.y),2)))
+              pointDistance: this.calculateDistance(prevPoint, point)
             }
           ];
         }
@@ -190,6 +190,26 @@ export default class App extends React.Component {
     this.changeEditMode(1)
   }
 
+  calculateDistance(pointA, pointB){
+    return Math.round(Math.sqrt(Math.pow((pointB.x - pointA.x),2) + Math.pow((pointB.y - pointA.y),2)));
+  }
+  
+  distanceToLine(lineStart, lineEnd, point){
+    const c = this.calculateDistance(lineStart, lineEnd);
+    const a = this.calculateDistance(lineStart, point);
+    const b = this.calculateDistance(lineEnd, point);
+    if (b^2 > a^2 + c^2)
+      return distanceToLine = a;
+    else if (a^2 > b^2 + c^2)
+      return distanceToLine = b;
+    else {
+      s = (a+b+c)/2
+      return distanceToLine = 2/c * sqrt(s*(s-a)*(s-b)*(s-c))
+    }     
+  }
+
+
+
   formatAdditionalRoutes(){
     this.print(this.state.additionalPoints)
     const additionalPoints = this.state.additionalPoints
@@ -203,6 +223,20 @@ export default class App extends React.Component {
       nextPoint.y *= this.state.scale;
 
       if(!currentPoint.isInJson){
+        this.state.json.forEach(point => {
+          point.distances.forEach( distance => {
+            
+          })
+        })
+        // foreach ponto do json
+            // foreach distance das distances
+                // if (distanceToLine / this.state.scale <= 10){
+                //   acha o ponto "de verdade"
+                //   point = pontoDeVerdade;
+                // } else {
+                //    cria novo ponto
+                // }
+
         //verifica se ele está em alguma linha
         //se sim
           //ajusta o ponto
@@ -219,7 +253,7 @@ export default class App extends React.Component {
         const point = this.state.json.find( point => (currentPoint.name === point.name));
         point.distances.push({
           pointName: nextPoint.name, 
-          pointDistance: Math.round(Math.sqrt(Math.pow((nextPoint.x - point.x),2) + Math.pow((nextPoint.y - point.y),2)))
+          pointDistance: this.calculateDistance(point, nextPoint)
         })
       }
     }
