@@ -102,10 +102,11 @@ export default class App extends React.Component {
     });
 
     if(aux){
-      aux.x /= this.state.scale;
-      aux.y /= this.state.scale;
-      aux.isInJson = true;
-      return aux;
+      const returnable = {...aux}
+      returnable.x /= this.state.scale;
+      returnable.y /= this.state.scale;
+      returnable.isInJson = true;
+      return returnable;
     }
 
     aux = this.state.additionalPoints.find( point => {
@@ -251,7 +252,6 @@ export default class App extends React.Component {
         for ( let i=0; i < jsonPoints.length; i++){
           const point = jsonPoints[i];
 
-          loop2:
           for ( let j=0; j < point.distances.length; j++){
             const distance = point.distances[j];
             const connectedPoint = jsonPoints.find(p => distance.pointName === p.name);
