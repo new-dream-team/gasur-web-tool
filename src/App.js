@@ -15,6 +15,7 @@ export default class App extends React.Component {
       editMode: 0,
       scale: 1,
       json: [],
+      poi: [],
     }
 
     this._onMouseClick = this._onMouseClick.bind(this)
@@ -25,7 +26,9 @@ export default class App extends React.Component {
   }
 
   _onMouseClick(e) {
-    if(this.state.editMode === 0){
+    switch(this.state.editMode){
+    
+    case 0: 
       if (this.state.points.length < 1) {
         this.state.points.push({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY , name: `P${this.state.currentChar}`})
       } else {
@@ -35,19 +38,21 @@ export default class App extends React.Component {
         })
       }
       this.setState({ currentChar: this.state.currentChar + 1})
-    } else if ( this.state.editMode === 1){
+      break;
+    
+    case 1: 
       const cursorPoint = this.cursorPoint(e)
       let newAdditionalPoints = this.state.additionalPoints;
       if(cursorPoint){
           newAdditionalPoints.push({ x: Math.round(cursorPoint.x), y: Math.round(cursorPoint.y), name: cursorPoint.name, wasAPoint: true, isInJson: cursorPoint.isInJson})
 
-          if(newAdditionalPoints.length % 2 === 0 ){
+          if (newAdditionalPoints.length % 2 === 0) {
             // verifica o que tem atras e muda
-            if(!newAdditionalPoints[newAdditionalPoints.length - 2].wasAPoint){
+            if (!newAdditionalPoints[newAdditionalPoints.length - 2].wasAPoint){
               this.changePointPosition(newAdditionalPoints, (newAdditionalPoints.length - 2), (newAdditionalPoints.length-1))
             }
           }
-      }else{
+      } else {
           // newAdditionalPoints = this.addNewAdjustedPoint(this.state.additionalPoints,e)
           newAdditionalPoints.push({ x: Math.round(e.nativeEvent.offsetX), y: Math.round(e.nativeEvent.offsetY), name: `P${this.state.currentChar}`, wasAPoint: false, isInJson: false})
           this.setState({ currentChar: this.state.currentChar + 1})
@@ -63,7 +68,62 @@ export default class App extends React.Component {
 
       this.setState({
         additionalPoints: newAdditionalPoints
-      })
+      });
+      break;
+
+    case 2:
+      const poi = this.state.poi;
+      const name = prompt("Digite o nome do Ponto");
+      const point = {
+        name,
+        x: Math.round(e.nativeEvent.offsetX * this.state.scale), 
+        y: Math.round(e.nativeEvent.offsetY * this.state.scale),
+        distances: [],
+      };
+
+      const response = this.findPoi(point,this.state.json);
+      if(response){
+        poi.push(response);
+        this.setState({
+          poi
+        });
+      }else{
+        alert("Ponto não está sobre uma rota");
+      }
+    break;
+
+    default: 
+    console.log("Algo de errado com o editMode");
+    break;
+
+    }
+  }
+
+
+  findPoi(point, jsonPoints){
+    let currentPoint = {...point}
+
+    for (let i=0; i < jsonPoints.length; i++) {
+      const point = jsonPoints[i];
+      for (let j=0; j < point.distances.length; j++) {
+        const distance = point.distances[j];
+        const connectedPoint = jsonPoints.find(p => distance.pointName === p.name);
+
+        if (this.distanceToLine(point, connectedPoint, currentPoint) <= 10) {
+          currentPoint = this.forcePointCoordinatesToLine(point, connectedPoint, currentPoint);
+          currentPoint.distances = [
+            {
+              pointName: point.name,
+              pointDistance: this.calculateDistance(point,currentPoint)
+            },
+            {
+              pointName: connectedPoint.name,
+              pointDistance: this.calculateDistance(connectedPoint,currentPoint)
+            },
+          ]
+          return currentPoint;
+        }
+      }
     }
   }
 
@@ -87,6 +147,9 @@ export default class App extends React.Component {
       newPoints[newPoints.length - 1].x = e.nativeEvent.offsetX
     }
     newPoints.push({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY , name: `P${this.state.currentChar}`})
+    this.setState({
+      currentChar: this.state.currentChar + 1,
+    });
     return newPoints;
   }
 
@@ -245,8 +308,8 @@ export default class App extends React.Component {
   debug(){
     console.log("JSON");
     this.print(this.state.json);
-    console.log("addtnlpts");
-    this.print(this.state.additionalPoints);
+    console.log("POI");
+    this.print(this.state.poi);
   }
 
   addPointToTheMiddleOfTheLine(lineStart, lineEnd, point, pointsArray) {
@@ -278,7 +341,6 @@ export default class App extends React.Component {
       pointName: lineEnd.name,
       pointDistance: this.calculateDistance(lineStart, lineEnd)
     });
-    this.print(pointsArray);
   }
 
   formatAdditionalRoutes() {
@@ -286,11 +348,11 @@ export default class App extends React.Component {
     const additionalPoints = this.state.additionalPoints
     
     for( var i = 0; i < additionalPoints.length; i+=2 ){
-      let currentPoint = additionalPoints[i];
+      let currentPoint = {...additionalPoints[i]};
       currentPoint.x = Math.round(this.state.scale * currentPoint.x);
       currentPoint.y = Math.round(this.state.scale * currentPoint.y);
 
-      let nextPoint = additionalPoints[i+1];
+      let nextPoint = {...additionalPoints[i+1]};
       nextPoint.x =  Math.round(this.state.scale * nextPoint.x);
       nextPoint.y =  Math.round(this.state.scale * nextPoint.y);
       const jsonPoints = this.state.json;
@@ -350,9 +412,6 @@ export default class App extends React.Component {
         pointName: currentPoint.name,
         pointDistance: this.calculateDistance(currentPoint, nextPoint),
       });
-
-      this.print(jsonPoints)
-
     }
   }
 
@@ -365,6 +424,7 @@ export default class App extends React.Component {
       editMode,
     })
   }
+
 
  render() {
   return (
@@ -382,6 +442,7 @@ export default class App extends React.Component {
             <input type="button" value="Limpar" onClick={this.clearPoints}/>
             <input type="button" value="Editar rotas" onClick={this.generateJson}/>
             <input type="button" value="Salvar rotas" onClick={this.formatAdditionalRoutes}/>
+            <input type="button" value="Selecionar Pontos de Interesse" onClick={this.changeEditMode.bind(this,2)}/>
             <input type="button" value="Debug" onClick={this.debug}/>
 
         </form>
@@ -418,6 +479,13 @@ export default class App extends React.Component {
                   )
                 }
               })}
+              {
+                this.state.poi.map((point,key) => {
+                  return(
+                    <rect className="App-Svg-Rect" x={`${(point.x - 5) / this.state.scale}`} y={`${(point.y - 5) / this.state.scale}`} key={key*666} rx="20" ry="20" width="10" height="10" fill="blue"/>
+                  );
+                })
+              }
           </svg>
          <img id="mapa" src={this.state.urlImage} className="App-Image" alt="mapa"/>
         </div>

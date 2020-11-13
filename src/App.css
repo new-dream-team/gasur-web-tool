@@ -24,7 +24,8 @@
   align-items: center;
   justify-content: space-between;
   min-width: 800px;
-  max-width: 40vw;
+  /* max-width: 40vw; */
+  max-width: 60vw;
 }
 
 .App-Form input {
