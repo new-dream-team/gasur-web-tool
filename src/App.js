@@ -49,7 +49,7 @@ export default class App extends React.Component {
           }
       }else{
           // newAdditionalPoints = this.addNewAdjustedPoint(this.state.additionalPoints,e)
-          newAdditionalPoints.push({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY , name: `P${this.state.currentChar}`, wasAPoint: false, isInJson: false})
+          newAdditionalPoints.push({ x: Math.round(e.nativeEvent.offsetX), y: Math.round(e.nativeEvent.offsetY), name: `P${this.state.currentChar}`, wasAPoint: false, isInJson: false})
           this.setState({ currentChar: this.state.currentChar + 1})
           if(newAdditionalPoints.length % 2 === 0 ){
             if(newAdditionalPoints[newAdditionalPoints.length - 2].wasAPoint){
@@ -103,8 +103,8 @@ export default class App extends React.Component {
 
     if(aux){
       const returnable = {...aux}
-      returnable.x /= this.state.scale;
-      returnable.y /= this.state.scale;
+      returnable.x = Math.round(returnable.x / this.state.scale);
+      returnable.y = Math.round(returnable.y / this.state.scale);
       returnable.isInJson = true;
       return returnable;
     }
@@ -196,18 +196,33 @@ export default class App extends React.Component {
     return Math.round(Math.sqrt(Math.pow((pointB.x - pointA.x),2) + Math.pow((pointB.y - pointA.y),2)));
   }
   
-  distanceToLine(lineStart, lineEnd, point){
+  distanceToLine(lineStart1, lineEnd1, point1){
+    const lineStart = { ...lineStart1};
+    const lineEnd = { ...lineEnd1};
+    const point = { ...point1};
+
+    lineStart.x /= this.state.scale;
+    lineStart.y /= this.state.scale;
+
+    lineEnd.x /= this.state.scale;
+    lineEnd.y /= this.state.scale;
+
+    point.x /= this.state.scale;
+    point.y /= this.state.scale;
+
     const c = this.calculateDistance(lineStart, lineEnd);
     const a = this.calculateDistance(lineStart, point);
     const b = this.calculateDistance(lineEnd, point);
-    if (b^2 > a^2 + c^2)
-      return a;
-    else if (a^2 > b^2 + c^2)
-      return b;
-    else {
+    let result;
+    if (Math.pow(b,2) > Math.pow(a,2) + Math.pow(c,2)){
+      result = a;
+    }else if (Math.pow(a,2) > Math.pow(b,2) + Math.pow(c,2)){
+      result = b;
+    }else {
       let s = (a+b+c)/2
-      return 2/c * Math.sqrt(s*(s-a)*(s-b)*(s-c))
-    }     
+      result = 2/c * Math.sqrt(s*(s-a)*(s-b)*(s-c))
+    }
+    return result;
   }
 
   forcePointCoordinatesToLine(lineStart, lineEnd, point){    
@@ -221,6 +236,7 @@ export default class App extends React.Component {
     const normalizedDistanceLineStartToPoint = startToEndDotProduct / startToEndMagnitudeSquared;
 
     return {
+      name: point.name,
       x: lineStart.x + startToEnd[0] * normalizedDistanceLineStartToPoint,
       y: lineStart.y + startToEnd[1] * normalizedDistanceLineStartToPoint,
     };
@@ -233,89 +249,110 @@ export default class App extends React.Component {
     this.print(this.state.additionalPoints);
   }
 
-  formatAdditionalRoutes(){
+  addPointToTheMiddleOfTheLine(lineStart, lineEnd, point, pointsArray) {
+    point = this.forcePointCoordinatesToLine(lineStart, lineEnd, point);
+    lineStart.distances.splice(lineStart.distances.map(d => d.pointName).indexOf(lineEnd.name), 1);
+    lineEnd.distances.splice(lineEnd.distances.map(d => d.pointName).indexOf(lineStart.name), 1);
+    pointsArray.push({
+      name: point.name,
+      x: point.x,
+      y: point.y,
+      distances: [
+        {
+          pointName: lineStart.name,
+          pointDistance: this.calculateDistance(point, lineStart)
+        },
+        {
+          pointName: lineEnd.name,
+          pointDistance: this.calculateDistance(point, lineEnd)
+        }
+      ]
+    });
+
+    lineStart.distances.push({
+      pointName: point.name,
+      pointDistance: this.calculateDistance(lineStart, point)
+    });
+
+    lineEnd.distances.push({
+      pointName: lineEnd.name,
+      pointDistance: this.calculateDistance(lineStart, lineEnd)
+    });
+    this.print(pointsArray);
+  }
+
+  formatAdditionalRoutes() {
    
     const additionalPoints = this.state.additionalPoints
     
     for( var i = 0; i < additionalPoints.length; i+=2 ){
       let currentPoint = additionalPoints[i];
-      currentPoint.x *= this.state.scale;
-      currentPoint.y *= this.state.scale;
+      currentPoint.x = Math.round(this.state.scale * currentPoint.x);
+      currentPoint.y = Math.round(this.state.scale * currentPoint.y);
 
       let nextPoint = additionalPoints[i+1];
-      nextPoint.x *= this.state.scale;
-      nextPoint.y *= this.state.scale;
+      nextPoint.x =  Math.round(this.state.scale * nextPoint.x);
+      nextPoint.y =  Math.round(this.state.scale * nextPoint.y);
       const jsonPoints = this.state.json;
-     
-      if(!currentPoint.isInJson){
-        loop1:
-        for ( let i=0; i < jsonPoints.length; i++){
-          const point = jsonPoints[i];
+      
+      let alreadyFoundCurrentPoint = false;
+      let alreadyFoundNextPoint = false;
+            
+      loop1:
+      for (let i=0; i < jsonPoints.length; i++) {
+        const point = jsonPoints[i];
 
-          for ( let j=0; j < point.distances.length; j++){
-            const distance = point.distances[j];
-            const connectedPoint = jsonPoints.find(p => distance.pointName === p.name);
-            if (this.distanceToLine(point, connectedPoint, currentPoint) <= 10) {
-              currentPoint = this.forcePointCoordinatesToLine(point, connectedPoint, currentPoint);
-              
-              point.distances.splice(point.distances.map(d => d.pointName).indexOf(connectedPoint.name), 1);
-              connectedPoint.distances.splice(connectedPoint.distances.map(d => d.pointName).indexOf(point.name), 1);
+        for (let j=0; j < point.distances.length; j++) {
+          const distance = point.distances[j];
+          const connectedPoint = jsonPoints.find(p => distance.pointName === p.name);
 
-              jsonPoints.push({
-                name: currentPoint.name,
-                x: currentPoint.x,
-                y: currentPoint.y,
-                distances: [
-                  {
-                    pointName: point.name,
-                    pointDistance: this.calculateDistance(currentPoint, point)
-                  },
-                  {
-                    pointName: connectedPoint.name,
-                    pointDistance: this.calculateDistance(currentPoint, connectedPoint)
-                  }
-                ]
-              });
+          if (!alreadyFoundCurrentPoint && !currentPoint.isInJson && this.distanceToLine(point, connectedPoint, currentPoint) <= 10) {
+            this.addPointToTheMiddleOfTheLine(point, connectedPoint, currentPoint, jsonPoints);
+            alreadyFoundCurrentPoint = true;
 
-              point.distances.push({
-                pointName: currentPoint.name,
-                pointDistance: this.calculateDistance(point, currentPoint)
-              });
+          } else if (!alreadyFoundNextPoint && !nextPoint.isInJson && this.distanceToLine(point, connectedPoint, nextPoint) <= 10) {
+            this.addPointToTheMiddleOfTheLine(point, connectedPoint, nextPoint, jsonPoints);
+            alreadyFoundNextPoint = true;
+          }
 
-              connectedPoint.distances.push({
-                pointName: connectedPoint.name,
-                pointDistance: this.calculateDistance(point, connectedPoint)
-              });
-
+          if (alreadyFoundNextPoint && alreadyFoundCurrentPoint){
               break loop1;
-            }
           }
         }
-
-
-
       }
 
-      if(!nextPoint.isInJson) {
-        this.state.json.forEach(point => {
-          point.distances.forEach( distance => {
-            const connectedPoint = this.state.json.find(p => distance.pointName === p.name);
-            if (this.distanceToLine(point, connectedPoint, nextPoint) <= 10) {
-              //está na linha, ajusta essa desgraça
-              //sai do forEach break continue sua mae
-            }
-          })
+      if (!currentPoint.isInJson && !alreadyFoundCurrentPoint) {
+        jsonPoints.push({
+          name: currentPoint.name,
+          x: currentPoint.x,
+          y: currentPoint.y,
+          distances: []
         })
+      } 
 
-      }
-
-      if(currentPoint.isInJson){
-        const point = this.state.json.find( point => (currentPoint.name === point.name));
-        point.distances.push({
-          pointName: nextPoint.name, 
-          pointDistance: this.calculateDistance(point, nextPoint)
+      if (!nextPoint.isInJson && !alreadyFoundNextPoint) {
+        jsonPoints.push({
+          name: nextPoint.name,
+          x: nextPoint.x,
+          y: nextPoint.y,
+          distances: []
         })
       }
+
+      // adiciona o current no distances do next
+      jsonPoints.find( point => currentPoint.name === point.name).distances.push({
+        pointName: nextPoint.name,
+        pointDistance: this.calculateDistance(currentPoint, nextPoint)
+      });
+
+      // adiciona o next no distances do current
+      jsonPoints.find( point => nextPoint.name === point.name).distances.push({
+        pointName: currentPoint.name,
+        pointDistance: this.calculateDistance(currentPoint, nextPoint),
+      });
+
+      this.print(jsonPoints)
+
     }
   }
 
