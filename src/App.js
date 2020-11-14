@@ -23,6 +23,7 @@ export default class App extends React.Component {
     this.generateJson = this.generateJson.bind(this)
     this.formatAdditionalRoutes = this.formatAdditionalRoutes.bind(this)
     this.debug = this.debug.bind(this)
+    this.submit = this.submit.bind(this)
   }
 
   _onMouseClick(e) {
@@ -45,7 +46,6 @@ export default class App extends React.Component {
       let newAdditionalPoints = this.state.additionalPoints;
       if(cursorPoint){
           newAdditionalPoints.push({ x: Math.round(cursorPoint.x), y: Math.round(cursorPoint.y), name: cursorPoint.name, wasAPoint: true, isInJson: cursorPoint.isInJson})
-
           if (newAdditionalPoints.length % 2 === 0) {
             // verifica o que tem atras e muda
             if (!newAdditionalPoints[newAdditionalPoints.length - 2].wasAPoint){
@@ -53,7 +53,6 @@ export default class App extends React.Component {
             }
           }
       } else {
-          // newAdditionalPoints = this.addNewAdjustedPoint(this.state.additionalPoints,e)
           newAdditionalPoints.push({ x: Math.round(e.nativeEvent.offsetX), y: Math.round(e.nativeEvent.offsetY), name: `P${this.state.currentChar}`, wasAPoint: false, isInJson: false})
           this.setState({ currentChar: this.state.currentChar + 1})
           if(newAdditionalPoints.length % 2 === 0 ){
@@ -147,9 +146,6 @@ export default class App extends React.Component {
       newPoints[newPoints.length - 1].x = e.nativeEvent.offsetX
     }
     newPoints.push({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY , name: `P${this.state.currentChar}`})
-    this.setState({
-      currentChar: this.state.currentChar + 1,
-    });
     return newPoints;
   }
 
@@ -180,7 +176,9 @@ export default class App extends React.Component {
     });
 
     if(aux){
-      aux.isInJson = false;
+       const returnable = {...aux}
+       returnable.isInJson = false;
+       return returnable;
     }
 
     return aux;
@@ -310,6 +308,8 @@ export default class App extends React.Component {
     this.print(this.state.json);
     console.log("POI");
     this.print(this.state.poi);
+    console.log("AdditionalPoints");
+    this.print(this.state.additionalPoints);
   }
 
   addPointToTheMiddleOfTheLine(lineStart, lineEnd, point, pointsArray) {
@@ -338,15 +338,20 @@ export default class App extends React.Component {
     });
 
     lineEnd.distances.push({
-      pointName: lineEnd.name,
-      pointDistance: this.calculateDistance(lineStart, lineEnd)
+      pointName: point.name,
+      pointDistance: this.calculateDistance(lineEnd, point)
     });
+  }
+
+  isInJson(point){
+    const resp = this.state.json.find( obj => obj.name === point.name);
+    return resp? true: false;
   }
 
   formatAdditionalRoutes() {
    
-    const additionalPoints = this.state.additionalPoints
-    
+    const additionalPoints = this.state.additionalPoints;
+
     for( var i = 0; i < additionalPoints.length; i+=2 ){
       let currentPoint = {...additionalPoints[i]};
       currentPoint.x = Math.round(this.state.scale * currentPoint.x);
@@ -368,11 +373,11 @@ export default class App extends React.Component {
           const distance = point.distances[j];
           const connectedPoint = jsonPoints.find(p => distance.pointName === p.name);
 
-          if (!alreadyFoundCurrentPoint && !currentPoint.isInJson && this.distanceToLine(point, connectedPoint, currentPoint) <= 10) {
+          if (!alreadyFoundCurrentPoint && !this.isInJson(currentPoint) && this.distanceToLine(point, connectedPoint, currentPoint) <= 10) {
             this.addPointToTheMiddleOfTheLine(point, connectedPoint, currentPoint, jsonPoints);
             alreadyFoundCurrentPoint = true;
 
-          } else if (!alreadyFoundNextPoint && !nextPoint.isInJson && this.distanceToLine(point, connectedPoint, nextPoint) <= 10) {
+          } else if (!alreadyFoundNextPoint && !this.isInJson(nextPoint) && this.distanceToLine(point, connectedPoint, nextPoint) <= 10) {
             this.addPointToTheMiddleOfTheLine(point, connectedPoint, nextPoint, jsonPoints);
             alreadyFoundNextPoint = true;
           }
@@ -383,22 +388,24 @@ export default class App extends React.Component {
         }
       }
 
-      if (!currentPoint.isInJson && !alreadyFoundCurrentPoint) {
+      if (!this.isInJson(currentPoint) && !alreadyFoundCurrentPoint) {
         jsonPoints.push({
           name: currentPoint.name,
           x: currentPoint.x,
           y: currentPoint.y,
           distances: []
-        })
+        });
+
       } 
 
-      if (!nextPoint.isInJson && !alreadyFoundNextPoint) {
+      if (!this.isInJson(nextPoint) && !alreadyFoundNextPoint) {
         jsonPoints.push({
           name: nextPoint.name,
           x: nextPoint.x,
           y: nextPoint.y,
           distances: []
-        })
+        });
+        
       }
 
       // adiciona o current no distances do next
@@ -425,6 +432,22 @@ export default class App extends React.Component {
     })
   }
 
+  async sendToAPI(){
+    const imageToSend = {
+      name: this.state.name,
+      urlImage: this.state.urlImage,
+      points: this.state.json,
+      poi: this.state.poi
+    }
+    return await api.post('image',imageToSend);
+  }
+
+  async submit(){
+    // eslint-disable-next-line no-undef
+    const resp = await this.sendToAPI();
+    alert(resp.statusText);
+  }
+
 
  render() {
   return (
@@ -444,7 +467,7 @@ export default class App extends React.Component {
             <input type="button" value="Salvar rotas" onClick={this.formatAdditionalRoutes}/>
             <input type="button" value="Selecionar Pontos de Interesse" onClick={this.changeEditMode.bind(this,2)}/>
             <input type="button" value="Debug" onClick={this.debug}/>
-
+            <input type="button" value="Enviar" onClick={this.submit}/>
         </form>
       </div>
 
