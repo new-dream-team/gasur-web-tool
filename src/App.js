@@ -16,6 +16,7 @@ export default class App extends React.Component {
       scale: 1,
       json: [],
       poi: [],
+      buttonName: 'Editar Rotas',
     }
 
     this._onMouseClick = this._onMouseClick.bind(this)
@@ -24,6 +25,8 @@ export default class App extends React.Component {
     this.formatAdditionalRoutes = this.formatAdditionalRoutes.bind(this)
     this.debug = this.debug.bind(this)
     this.submit = this.submit.bind(this)
+    this.changeMode = this.changeMode.bind(this)
+    this.loadImage = this.loadImage.bind(this)
   }
 
   _onMouseClick(e) {
@@ -187,8 +190,12 @@ export default class App extends React.Component {
   clearPoints() {
     this.setState({
       points: [],
+      additionalPoints: [],
+      json: [],
+      poi: [],
       currentChar: 0,
-      editMode: 0
+      editMode: 0,
+      buttonName: "Editar Rotas",
     });
   }
 
@@ -420,6 +427,8 @@ export default class App extends React.Component {
         pointDistance: this.calculateDistance(currentPoint, nextPoint),
       });
     }
+
+    this.changeEditMode(2);
   }
 
   print( json ){
@@ -448,6 +457,40 @@ export default class App extends React.Component {
     alert(resp.statusText);
   }
 
+  async changeMode(){
+    switch(this.state.editMode){
+      case 0 : 
+        this.generateJson();
+        this.setState({
+          buttonName: "Selecionar Pontos de Interesse"
+        });
+        break;
+
+      case 1 :
+        this.formatAdditionalRoutes();
+        this.setState({
+          buttonName: "Enviar"
+        });
+        break;
+
+      case 2:
+        await this.submit();
+        this.clearPoints();
+        break;
+
+        default:
+          break;
+    }
+  }
+
+  loadImage(){
+    const element = document.getElementById("inputUrlImage")
+    this.clearPoints();
+    this.setState({
+      urlImage: element.value
+    })
+  }
+
 
  render() {
   return (
@@ -460,14 +503,12 @@ export default class App extends React.Component {
             </label>
             <label htmlFor="urlImage">
               URL da Imagem
-              <input type="text" onChange={(event) => this.setState({urlImage: event.target.value})} name="urlImage" className="App-Input" />
+              <input type="text" id="inputUrlImage" name="urlImage" className="App-Input" />
             </label>
+            <input type="button" value="Carregar Imagem" onClick={this.loadImage}/>
             <input type="button" value="Limpar" onClick={this.clearPoints}/>
-            <input type="button" value="Editar rotas" onClick={this.generateJson}/>
-            <input type="button" value="Salvar rotas" onClick={this.formatAdditionalRoutes}/>
-            <input type="button" value="Selecionar Pontos de Interesse" onClick={this.changeEditMode.bind(this,2)}/>
+            <input type="button" value={this.state.buttonName} onClick={this.changeMode}/>
             <input type="button" value="Debug" onClick={this.debug}/>
-            <input type="button" value="Enviar" onClick={this.submit}/>
         </form>
       </div>
 
